@@ -68,6 +68,16 @@ local function resolve_wildcards(cmd, hovered_path, hovered_dir, sel_paths, sel_
 	return cmd
 end
 
+--- Detects login shell. Enables aliases and functions in bash/zsh.
+local function get_shell()
+	local shell_env = os.getenv("SHELL") or "/bin/sh"
+	local shell_name = shell_env:match("([^/]+)$") or "sh"
+	shell_name = shell_name:lower()
+	-- "-i" for interactive shells (bash/zsh), "-c" for non-interactive shells (sh/fish)
+	local flag = (shell_name == "bash" or shell_name == "zsh") and "-ic" or "-c"
+	return shell_env, shell_name, flag
+end
+
 local function entry(_, job)
 	local cmd
 	if #job.args == 0 then
@@ -84,8 +94,9 @@ local function entry(_, job)
 	local hovered_path, hovered_dir, sel_paths, sel_dirs = get_context()
 	cmd = resolve_wildcards(cmd, hovered_path, hovered_dir, sel_paths, sel_dirs)
 
-	local output, err = Command("sh")
-			:arg({ "-c", cmd })
+	local shell_bin, shell_name, shell_flag = get_shell()
+	local output, err = Command(shell_bin)
+			:arg({ shell_flag, cmd })
 			:stdout(Command.PIPED)
 			:stderr(Command.PIPED)
 			:output()
@@ -99,7 +110,7 @@ local function entry(_, job)
 	local result = output.stdout ~= "" and output.stdout or output.stderr
 	result = result ~= "" and result or "(no output)"
 	result = result:gsub("\n+$", "")
-	ya.notify({ title = "sh $ " .. cmd, content = result, timeout = 5, level = "info" })
+	ya.notify({ title = shell_name .. " $ " .. cmd, content = result, timeout = 5, level = "info" })
 end
 
 return { entry = entry }

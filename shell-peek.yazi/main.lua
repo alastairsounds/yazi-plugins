@@ -112,6 +112,16 @@ local function entry(_, job)
 		return
 	end
 
+	if not output.status.success then
+		local code = output.status.code or "?"
+		local msg = output.stderr ~= "" and output.stderr or output.stdout
+		msg = msg ~= "" and msg or ("Command exited with code " .. code)
+		msg = strip_ansi(msg)
+		msg = msg:gsub("\n+$", "")
+		ya.notify({ title = "shell-peek: exit " .. code, content = msg, timeout = 5, level = "warn" })
+		return
+	end
+
 	local result = output.stdout ~= "" and output.stdout or output.stderr
 	result = strip_ansi(result ~= "" and result or "(no output)"):gsub("\n+$", "")
 	ya.notify({ title = shell_name .. " $ " .. cmd, content = result, timeout = 5, level = "info" })

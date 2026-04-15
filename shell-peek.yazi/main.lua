@@ -108,23 +108,23 @@ local function entry(_, job)
 
 	if err then
 		ya.err("[shell-peek] ERR: " .. tostring(err))
-		ya.notify({ title = "sh (error) $ " .. cmd, content = tostring(err), timeout = 5, level = "error" })
+		ya.notify({ title = shell_name .. " (error) $ " .. cmd, content = tostring(err), timeout = 5, level = "error" })
 		return
 	end
 
 	if not output.status.success then
 		local code = output.status.code or "?"
-		local msg = output.stderr ~= "" and output.stderr or output.stdout
-		msg = msg ~= "" and msg or ("Command exited with code " .. code)
-		msg = strip_ansi(msg)
-		msg = msg:gsub("\n+$", "")
-		ya.notify({ title = "shell-peek: exit " .. code, content = msg, timeout = 5, level = "warn" })
+		local content = output.stderr ~= "" and output.stderr or output.stdout
+		content = content ~= "" and content or ("(command exited with code " .. code .. ")")
+		content = strip_ansi(content)
+		content = content:gsub("\n+$", "")
+		ya.notify({ title = shell_name .. " $ " .. cmd, content = content, timeout = 5, level = "warn" })
 		return
 	end
 
-	local result = output.stdout ~= "" and output.stdout or output.stderr
-	result = strip_ansi(result ~= "" and result or "(no output)"):gsub("\n+$", "")
-	ya.notify({ title = shell_name .. " $ " .. cmd, content = result, timeout = 5, level = "info" })
+	local content = output.stdout ~= "" and output.stdout or output.stderr
+	content = strip_ansi(content ~= "" and content or "(no output)"):gsub("\n+$", "")
+	ya.notify({ title = shell_name .. " $ " .. cmd, content = content, timeout = 5, level = "info" })
 end
 
 return { entry = entry }

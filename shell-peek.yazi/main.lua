@@ -78,6 +78,11 @@ local function get_shell()
 	return shell_env, shell_name, flag
 end
 
+--- Strip ANSI escape sequences from a string
+local function strip_ansi(s)
+	return s:gsub("\27%[[%d;]*[A-Za-z]", ""):gsub("\27[()][AB012]", "")
+end
+
 local function entry(_, job)
 	local cmd
 	if #job.args == 0 then
@@ -108,8 +113,7 @@ local function entry(_, job)
 	end
 
 	local result = output.stdout ~= "" and output.stdout or output.stderr
-	result = result ~= "" and result or "(no output)"
-	result = result:gsub("\n+$", "")
+	result = strip_ansi(result ~= "" and result or "(no output)"):gsub("\n+$", "")
 	ya.notify({ title = shell_name .. " $ " .. cmd, content = result, timeout = 5, level = "info" })
 end
 

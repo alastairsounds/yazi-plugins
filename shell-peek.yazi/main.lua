@@ -70,12 +70,29 @@ end
 
 --- Detects login shell. Enables aliases and functions in bash/zsh.
 local function get_shell()
-	local shell_env = os.getenv("SHELL") or "/bin/sh"
-	local shell_name = shell_env:match("([^/]+)$") or "sh"
-	shell_name = shell_name:lower()
-	-- "-i" for interactive shells (bash/zsh), "-c" for non-interactive shells (sh/fish)
-	local flag = (shell_name == "bash" or shell_name == "zsh") and "-ic" or "-c"
-	return shell_env, shell_name, flag
+	local shell_bin = os.getenv("SHELL") or "/bin/sh"
+	local shell_name = (shell_bin:match("([^/]+)$") or "sh"):lower()
+	return shell_bin, shell_name
+end
+
+--- Builds a command to execute in a shell, optionally using `setsid` to avoid job control issues.
+local function get_command(cmd, shell_bin, shell_name)
+	local setsid_file = io.open("/usr/bin/setsid") or io.open("/bin/setsid")
+	if setsid_file then setsid_file:close() end
+	local setsid = setsid_file ~= nil
+
+	local flags = {
+		-- bash and zsh have tty flags in non-setsid contexts
+		["bash"] = setsid and { "-ic" } or { "--noediting", "+m", "-ic" },
+		["zsh"]  = setsid and { "-ic" } or { "-o", "NO_MONITOR", "-o", "NO_ZLE", "-ic" },
+	}
+	local shell_flags = flags[shell_name] or { "-c" } -- fish/sh/unknown all run non-interactively
+
+	local args = { table.unpack(shell_flags) }
+	table.insert(args, cmd)
+
+	local cmd_wrapped = setsid and Command("setsid"):arg({ "--wait", shell_bin }) or Command(shell_bin)
+	return cmd_wrapped:arg(args)
 end
 
 --- Strip ANSI escape sequences from a string
@@ -98,10 +115,10 @@ local function entry(_, job)
 
 	local hovered_path, hovered_dir, sel_paths, sel_dirs = get_context()
 	cmd = resolve_wildcards(cmd, hovered_path, hovered_dir, sel_paths, sel_dirs)
+	local shell_bin, shell_name = get_shell()
 
-	local shell_bin, shell_name, shell_flag = get_shell()
-	local output, err = Command(shell_bin)
-			:arg({ shell_flag, cmd })
+	local output, err = get_command(cmd, shell_bin, shell_name)
+			:stdin(Command.NULL)
 			:stdout(Command.PIPED)
 			:stderr(Command.PIPED)
 			:output()

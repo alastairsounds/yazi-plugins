@@ -7,6 +7,7 @@ local add = ya.sync(function(state, path, count)
 end)
 
 local get_opts = ya.sync(function(state)
+	---@diagnostic disable-next-line: redundant-return-value
 	return state.git_only, state.skip_gitignored_dirs, state.skip_gitignored_files
 end)
 
@@ -123,7 +124,23 @@ local function setup(state, opts)
 	end, order)
 end
 
+local toggle = ya.sync(function(state, key)
+	state[key] = not state[key]
+end)
+
+local function entry(_, job)
+	local action = job.args[1]
+	if action == "toggle_gitignored_dirs" then
+		toggle("skip_gitignored_dirs")
+	elseif action == "toggle_gitignored_files" then
+		toggle("skip_gitignored_files")
+	end
+	-- @? ui.render() redraws cached counts; doesn't re-trigger fetch. Look into possibility of re-triggering fetch
+	ui.render()
+end
+
 return {
 	fetch = fetch,
 	setup = setup,
+	entry = entry,
 }

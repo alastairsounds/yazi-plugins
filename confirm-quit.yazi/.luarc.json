@@ -1,9 +1,1 @@
-{
-  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
-  "runtime.version": "Lua 5.5",
-  "workspace.library": [
-    // You may need to change the path to your local plugin directory
-    "~/.config/yazi/plugins/types.yazi/"
-  ],
-  "diagnostics.globals": ["Linemode"]
-}
+../.luarc.json

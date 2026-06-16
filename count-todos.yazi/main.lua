@@ -6,10 +6,22 @@ local add = ya.sync(function(state, path, count)
 	ui.render()
 end)
 
+local get_git_only = ya.sync(function(state) return state.git_only end)
+
+local function in_git_repo(dir)
+	local out = Command("git"):arg({ "-C", dir, "rev-parse", "--show-toplevel" }):output()
+	return out ~= nil and out.status.success
+end
+
 --- Fetcher entry point. Counts todo occurences via `rg`, manipulates plugin
 --- state via `add`. Returns `false` to indicate no further fetchers should run
 --- for these files. Runs in async context (off the main thread).
 local function fetch(_, job)
+	if get_git_only() and #job.files > 0 then
+		local first = tostring(job.files[1].url)
+		local parent = first:match("^(.*)/[^/]*$") or first
+		if not in_git_repo(parent) then return false end
+	end
 	for _, file in ipairs(job.files) do
 		local path = tostring(file.url)
 		-- `--hidden` searches hidden/dot files
@@ -31,6 +43,7 @@ end
 --- `@42`, `@99+`, ` ` (blank), etc.).
 local function setup(state, opts)
 	state.counts = {}
+	state.git_only = opts and opts.git_only or false
 	local order = (opts and opts.order) or 1400
 	local t = th["count_todos"] or {}
 	local sign = t.sign or (opts and opts.sign) or "@"

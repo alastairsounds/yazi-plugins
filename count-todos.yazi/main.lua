@@ -130,9 +130,9 @@ end)
 
 local function entry(_, job)
 	local action = job.args[1]
-	if action == "toggle_gitignored_dirs" then
+	if action == "toggle-gitignored-dirs" then
 		toggle("skip_gitignored_dirs")
-	elseif action == "toggle_gitignored_files" then
+	elseif action == "toggle-gitignored-files" then
 		toggle("skip_gitignored_files")
 	end
 	-- @? ui.render() redraws cached counts; doesn't re-trigger fetch. Look into possibility of re-triggering fetch

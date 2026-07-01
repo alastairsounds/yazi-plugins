@@ -11,6 +11,8 @@ local get_opts = ya.sync(function(state)
 	return state.git_only, state.skip_gitignored_dirs, state.skip_gitignored_files
 end)
 
+local cwd_sync = ya.sync(function() return cx.active.current.cwd end)
+
 local function in_git_repo(dir)
 	local out = Command("git"):arg({ "-C", dir, "rev-parse", "--show-toplevel" }):output()
 	return out ~= nil and out.status.success
@@ -128,9 +130,41 @@ local toggle = ya.sync(function(state, key)
 	state[key] = not state[key]
 end)
 
+---@diagnostic disable: undefined-field, undefined-global
+--- Entry point for user-invoked actions (keybinds). With no invoked action,
+--- this runs `rg` to count todos in the current working directory.
+--- `toggle-gitignored-dirs`/`toggle-gitignored-files` args flip each flag.
 local function entry(_, job)
 	local action = job.args[1]
-	if action == "toggle-gitignored-dirs" then
+	if action == nil then
+		-- Snapshot tostring before output() yields. Root userdata freed during async wait
+		local root_str = tostring(cwd_sync())
+		local output = Command("rg")
+				:cwd(root_str)
+				:arg({ "--hidden", "--files-with-matches", "--iglob", "!.git",
+					"--iglob", "!*.{png,jpg,gif,pdf,zip,lock,svg,woff,woff2,ttf,eot}",
+					"@todo" })
+				:output()
+		if not output then
+			return ya.notify { title = "count-todos", content = "rg failed", timeout = 5, level = "error" }
+		end
+
+		-- see feat: custom search engine Lua API (https://github.com/sxyazi/yazi/pull/2452)
+		local id = ya.id("ft")
+		local cwd = Url(root_str):into_search("TODO files")
+		ya.emit("cd", { Url(cwd), source = "search" })
+		ya.emit("update_files", { op = fs.op("part", { id = id, url = Url(cwd), files = {} }) })
+
+		local files = {}
+		for line in output.stdout:gmatch("[^\r\n]+") do
+			local url = cwd:join(line)
+			local cha = fs.cha(url, true)
+			if cha then files[#files + 1] = File { url = url, cha = cha } end
+		end
+		ya.emit("update_files", { op = fs.op("part", { id = id, url = Url(cwd), files = files }) })
+		ya.emit("update_files", { op = fs.op("done", { id = id, url = cwd, cha = Cha { mode = tonumber("100644", 8) } }) })
+		return
+	elseif action == "toggle-gitignored-dirs" then
 		toggle("skip_gitignored_dirs")
 	elseif action == "toggle-gitignored-files" then
 		toggle("skip_gitignored_files")

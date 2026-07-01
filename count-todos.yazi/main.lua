@@ -22,6 +22,7 @@ end
 --- state via `add`. Returns `false` to indicate no further fetchers should run
 --- for these files. Runs in async context (off the main thread).
 local function fetch(_, job)
+	if #job.files > 0 and tostring(job.files[1].url):match("^search://") then return false end --* return early if search view, since we don't want to count todos in the search view itself
 	local git_only, skip_gitignored_dirs, skip_gitignored_files = get_opts()
 	if git_only and #job.files > 0 then
 		local first = tostring(job.files[1].url)
@@ -118,7 +119,6 @@ local function setup(state, opts)
 	local style = ui.Style():fg(t.fg or (opts and opts.fg) or "#FF8C00")
 
 	Linemode:children_add(function(self)
-		if not self._file.in_current then return "" end
 		local count = state.counts[tostring(self._file.url)]
 		if not count then return "" end
 		local label = count > 99 and (sign .. "99+") or (sign .. count)
@@ -141,7 +141,7 @@ local function entry(_, job)
 		local root_str = tostring(cwd_sync())
 		local output = Command("rg")
 				:cwd(root_str)
-				:arg({ "--hidden", "--files-with-matches", "--iglob", "!.git",
+				:arg({ "--hidden", "-c", "--with-filename", "--no-heading", "--iglob", "!.git",
 					"--iglob", "!*.{png,jpg,gif,pdf,zip,lock,svg,woff,woff2,ttf,eot}",
 					"@todo" })
 				:output()
@@ -157,9 +157,13 @@ local function entry(_, job)
 
 		local files = {}
 		for line in output.stdout:gmatch("[^\r\n]+") do
-			local url = cwd:join(line)
-			local cha = fs.cha(url, true)
-			if cha then files[#files + 1] = File { url = url, cha = cha } end
+			local relative_path, n = line:match("^(.*):(%d+)$")
+			if relative_path then
+				local url = cwd:join(relative_path)
+				add(tostring(url), tonumber(n))
+				local cha = fs.cha(url, true)
+				if cha then files[#files + 1] = File { url = url, cha = cha } end
+			end
 		end
 		ya.emit("update_files", { op = fs.op("part", { id = id, url = Url(cwd), files = files }) })
 		ya.emit("update_files", { op = fs.op("done", { id = id, url = cwd, cha = Cha { mode = tonumber("100644", 8) } }) })

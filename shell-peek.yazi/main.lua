@@ -106,6 +106,7 @@ local function entry(_, job)
 		local value, event = ya.input({
 			pos = { "top-center", y = 2, w = 50 },
 			title = "Shell (peek):",
+			history = "shared"
 		})
 		if event ~= 1 or not value or value == "" then return end
 		cmd = value

@@ -124,7 +124,7 @@ local function entry(_, job)
 			:stderr(Command.PIPED)
 			:output()
 
-	if err then
+	if err or not output then
 		ya.err("[shell-peek] ERR: " .. tostring(err))
 		ya.notify({ title = shell_name .. " (error) $ " .. cmd, content = tostring(err), timeout = 5, level = "error" })
 		return

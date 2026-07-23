@@ -38,6 +38,11 @@ end)
 local function resolve_wildcards(cmd, hovered_path, hovered_dir, sel_paths, sel_dirs)
 	-- Note: yazi's splatter.rs does not pass down to lua. Manually resolving here.
 
+	-- Escape `%%` to a sentinel byte first, so a literal `%%h` isn't corrupted by the
+	-- `%h` substitution below matching just its trailing `%h` (leaving a stray `%`).
+	local ESCAPE = "\1"
+	cmd = cmd:gsub("%%%%", ESCAPE)
+
 	-- Indexed patterns first to avoid accidental replacement in unindexed patterns.
 	-- %sN / %SN: Nth selected path (1-indexed)
 	cmd = cmd:gsub("%%[sS](%d+)", function(n)
@@ -73,6 +78,9 @@ local function resolve_wildcards(cmd, hovered_path, hovered_dir, sel_paths, sel_
 
 	-- %%: literal % (must be last)
 	cmd = cmd:gsub("%%%%", "%%")
+
+	-- restore escaped `%%` as a literal `%`
+	cmd = cmd:gsub(ESCAPE, "%%")
 
 	return cmd
 end
@@ -158,6 +166,13 @@ local function entry(_, job)
 		log_file:flush()
 	end
 
+	-- Perf check for this loop:
+	-- - Run the command (plain) directly in a plain terminal
+	--   - `for i in {1..30}; do printf "%s line %s\n" "$EPOCHREALTIME" "$i"; sleep 0.1; done`
+	-- - Run the command (escaped) directly in shell-peek with --log while tailing the log file
+	--   - `for i in {1..30}; do printf "%%s line %%s\n" "$EPOCHREALTIME" "$i"; sleep 0.1; done`
+	-- The per-line timestamps (zsh's $EPOCHREALTIME, no forked process) should show
+	-- the same ~100ms cadence in both.
 	local out_buf, err_buf = {}, {}
 	while true do
 		local line, event = child:read_line()

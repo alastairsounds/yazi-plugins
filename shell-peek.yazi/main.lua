@@ -1,3 +1,12 @@
+--- shell-peek.yazi: shell output notifier + logger
+-- Usage: plugin shell-peek -- [--log] <cmd>
+-- Example (scripted): "plugin shell-peek -- wc -l %h" (count lines in hovered file)
+-- Example (interactive): "plugin shell-peek" (will prompt for command)
+-- Example (persisted): "plugin shell-peek -- --log cargo test" (also appends the
+-- result to ~/.local/state/yazi/shell-peek.log so it outlives the notify toast)
+
+local LOG_PATH = (os.getenv("HOME") or "") .. "/.local/state/yazi/shell-peek.log"
+
 local get_context = ya.sync(function(_)
 	local hovered = cx.active.current.hovered
 	local hovered_url = hovered and hovered.url or nil
@@ -97,12 +106,24 @@ end
 
 --- Strip ANSI escape sequences from a string
 local function strip_ansi(s)
-	return s:gsub("\27%[[%d;]*[A-Za-z]", ""):gsub("\27[()][AB012]", "")
+	return (s:gsub("\27%[[%d;]*[A-Za-z]", ""):gsub("\27[()][AB012]", ""))
+end
+
+--- Open log file in append mode
+local function open_log()
+	local f = io.open(LOG_PATH, "a")
+	if not f then
+		os.execute("mkdir -p " .. ya.quote(LOG_PATH:match("(.*/)")))
+		f = io.open(LOG_PATH, "a")
+	end
+	return f
 end
 
 local function entry(_, job)
+	local args = job.args
 	local cmd
-	if #job.args == 0 then
+
+	if #args == 0 then
 		local value, event = ya.input({
 			pos = { "top-center", y = 2, w = 50 },
 			title = "Shell (peek):",
@@ -111,28 +132,59 @@ local function entry(_, job)
 		if event ~= 1 or not value or value == "" then return end
 		cmd = value
 	else
-		cmd = table.concat(job.args, " ")
+		cmd = table.concat(args, " ")
 	end
 
 	local hovered_path, hovered_dir, sel_paths, sel_dirs = get_context()
 	cmd = resolve_wildcards(cmd, hovered_path, hovered_dir, sel_paths, sel_dirs)
 	local shell_bin, shell_name = get_shell()
 
-	local output, err = get_command(cmd, shell_bin, shell_name)
+	local child, err = get_command(cmd, shell_bin, shell_name)
 			:stdin(Command.NULL)
 			:stdout(Command.PIPED)
 			:stderr(Command.PIPED)
-			:output()
+			:spawn()
 
-	if err or not output then
+	if err or not child then
 		ya.err("[shell-peek] ERR: " .. tostring(err))
 		ya.notify({ title = shell_name .. " (error) $ " .. cmd, content = tostring(err), timeout = 5, level = "error" })
 		return
 	end
 
-	if not output.status.success then
-		local code = output.status.code or "?"
-		local content = output.stderr ~= "" and output.stderr or output.stdout
+	local log = args.log == true
+	local log_file = log and open_log() or nil
+	if log_file then
+		log_file:write(("=== %s $ %s\n"):format(os.date("!%Y-%m-%dT%H:%M:%SZ"), cmd))
+		log_file:flush()
+	end
+
+	local out_buf, err_buf = {}, {}
+	while true do
+		local line, event = child:read_line()
+		if event == 0 or event == 1 then
+			local buf = event == 0 and out_buf or err_buf
+			buf[#buf + 1] = line
+			if log_file then
+				log_file:write(strip_ansi(line))
+				log_file:flush()
+			end
+		else
+			break
+		end
+	end
+
+	local status = child:wait()
+	local code = (status and status.code) or "?"
+
+	if log_file then
+		log_file:write(("=== exit %s\n"):format(code))
+		log_file:close()
+	end
+
+	local stdout_s, stderr_s = table.concat(out_buf), table.concat(err_buf)
+
+	if not (status and status.success) then
+		local content = stderr_s ~= "" and stderr_s or stdout_s
 		content = content ~= "" and content or ("(command exited with code " .. code .. ")")
 		content = strip_ansi(content)
 		content = content:gsub("\n+$", "")
@@ -140,7 +192,7 @@ local function entry(_, job)
 		return
 	end
 
-	local content = output.stdout ~= "" and output.stdout or output.stderr
+	local content = stdout_s ~= "" and stdout_s or stderr_s
 	content = strip_ansi(content ~= "" and content or "(no output)"):gsub("\n+$", "")
 	ya.notify({ title = shell_name .. " $ " .. cmd, content = content, timeout = 5, level = "info" })
 end

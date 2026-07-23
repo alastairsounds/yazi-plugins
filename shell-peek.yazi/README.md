@@ -29,4 +29,16 @@ keymap = [
 tail -f ~/.local/state/yazi/shell-peek.log
 ```
 
+Each run is bookended by an ISO 8601 timestamp so entries stay greppable even
+with multiline output in between:
+
+```log
+2026-07-23T20:18:11Z | for i in {1..10}; do echo "line $i"; sleep 1; done
+line 1
+line 2
+...
+line 10
+2026-07-23T20:18:21Z | exit 0
+```
+
 > [!NOTE] The `--log` flag must come immediately after the leading `--`. yazi only forwards the plugin id and everything after that first `--` to the plugin, so a flag placed before it is silently dropped.

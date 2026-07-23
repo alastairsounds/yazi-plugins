@@ -154,7 +154,7 @@ local function entry(_, job)
 	local log = args.log == true
 	local log_file = log and open_log() or nil
 	if log_file then
-		log_file:write(("=== %s $ %s\n"):format(os.date("!%Y-%m-%dT%H:%M:%SZ"), cmd))
+		log_file:write(("%s | %s\n"):format(os.date("!%Y-%m-%dT%H:%M:%SZ"), cmd))
 		log_file:flush()
 	end
 
@@ -177,7 +177,7 @@ local function entry(_, job)
 	local code = (status and status.code) or "?"
 
 	if log_file then
-		log_file:write(("=== exit %s\n"):format(code))
+		log_file:write(("%s | exit %s\n"):format(os.date("!%Y-%m-%dT%H:%M:%SZ"), code))
 		log_file:close()
 	end
 

@@ -15,7 +15,7 @@ Plugins for [Yazi](https://yazi-rs.github.io).
 Each plugin lives in its own `*.yazi/` directory. Install with:
 
 ```sh
-ya pkg add alastairsounds/confirm-quit
-ya pkg add alastairsounds/count-todos
-ya pkg add alastairsounds/shell-peek
+ya pkg add alastairsounds/yazi-plugins:confirm-quit
+ya pkg add alastairsounds/yazi-plugins:count-todos
+ya pkg add alastairsounds/yazi-plugins:shell-peek
 ```

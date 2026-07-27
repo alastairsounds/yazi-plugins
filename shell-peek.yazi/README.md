@@ -2,6 +2,12 @@
 
 Yazi plugin to peek the shell output after executing a command.
 
+## Install
+
+```sh
+ya pkg add alastairsounds/yazi-plugins:shell-peek
+```
+
 ## Usage
 
 ```toml

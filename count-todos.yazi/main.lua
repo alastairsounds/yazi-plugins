@@ -166,7 +166,7 @@ local function entry(_, job)
 			end
 		end
 		ya.emit("update_files", { op = fs.op("part", { id = id, url = Url(cwd), files = files }) })
-		ya.emit("update_files", { op = fs.op("done", { id = id, url = cwd, cha = Cha { mode = tonumber("100644", 8) } }) })
+		ya.emit("update_files", { op = fs.op("done", { id = id, file = File { url = cwd, cha = Cha { mode = tonumber("100644", 8) } } }) })
 		return
 	elseif action == "toggle-gitignored-dirs" then
 		toggle("skip_gitignored_dirs")

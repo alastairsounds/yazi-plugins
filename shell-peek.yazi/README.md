@@ -20,6 +20,22 @@ keymap = [
 
 Placeholders like `%h` (hovered path), `%s` (selected paths), `%d` (selected dirs) are resolved in the command string — see `main.lua` for the full list.
 
+## Demo
+
+Peek a lint check, a selection's disk usage, or a file's commit history — without leaving the list.
+
+**`rustfmt --check %h`** — is this file formatted?
+
+![Peeking a file's lint status](../_demo/shell-peek.yazi/lint-check.gif)
+
+**`du -sh %s | sort -rh`** — how big are these selected crates?
+
+![Peeking selected files' disk usage](../_demo/shell-peek.yazi/disk-usage.gif)
+
+**`git --no-pager log -5 --oneline -- %h`** — what recently changed here?
+
+![Peeking a file's commit history](../_demo/shell-peek.yazi/file-history.gif)
+
 ## Logging to a file
 
 Pass `--log` right after the `--` to also append the run to `~/.local/state/yazi/shell-peek.log`, updated live as the command produces output (so `tail -f` shows a long-running command's progress, not just the final result):

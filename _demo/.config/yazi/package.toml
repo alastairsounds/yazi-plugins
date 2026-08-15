@@ -1,0 +1,7 @@
+[plugin]
+deps = []
+
+[[flavor.deps]]
+use = "alastairsounds/github-dark-default"
+rev = "5907f7f"
+hash = "c0070aac7de14b24df0a846880651e51"

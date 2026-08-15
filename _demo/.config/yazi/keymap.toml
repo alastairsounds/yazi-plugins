@@ -1,0 +1,10 @@
+# A TOML linter such as https://github.com/tombi-toml/tombi can use this schema to validate your config.
+# If you encounter any problems, please make an issue at https://github.com/yazi-rs/schemas.
+#:schema https://yazi-rs.github.io/schemas/keymap.json
+
+# Defaults at https://raw.githubusercontent.com/sxyazi/yazi/refs/heads/main/yazi-config/preset/keymap-default.toml
+ 
+[mgr]
+prepend_keymap = [
+  { on = ';', run = 'plugin shell-peek', desc = 'Run a shell command (with peek)' },
+]

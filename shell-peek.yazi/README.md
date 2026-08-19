@@ -2,6 +2,8 @@
 
 Yazi plugin to peek the shell output after executing a command.
 
+![Peeking a file's commit history](../_demo/shell-peek.yazi/file-history.gif)
+
 ## Install
 
 ```sh
@@ -31,10 +33,6 @@ Peek a lint check, a selection's disk usage, or a file's commit history — with
 **`du -sh %s | sort -rh`** — how big are these selected crates?
 
 ![Peeking selected files' disk usage](../_demo/shell-peek.yazi/disk-usage.gif)
-
-**`git --no-pager log -5 --oneline -- %h`** — what recently changed here?
-
-![Peeking a file's commit history](../_demo/shell-peek.yazi/file-history.gif)
 
 ## Logging to a file
 

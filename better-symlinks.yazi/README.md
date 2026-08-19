@@ -15,3 +15,7 @@ Add to `~/.config/yazi/init.lua`:
 ```lua
 require("better-symlinks"):setup()
 ```
+
+## Demo
+
+![Symlink target shortened to ~](../_demo/better-symlinks.yazi/shorten-symlink.png)

@@ -7,4 +7,9 @@
 [mgr]
 prepend_keymap = [
   { on = ';', run = 'plugin shell-peek', desc = 'Run a shell command (with peek)' },
+  { on = 'q', run = 'plugin confirm-quit', desc = 'Quit (confirm if multiple tabs)' },
+
+  # todo-search demo
+  { on = ['`', 't'], run = 'plugin count-todos', desc = 'Search @todo files' },
+  { on = ['`', '`'], run = 'shell -- echo foo', desc = '(placeholder)' },
 ]

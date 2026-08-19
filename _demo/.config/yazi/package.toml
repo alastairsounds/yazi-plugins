@@ -1,5 +1,7 @@
-[plugin]
-deps = []
+[[plugin.deps]]
+use = "yazi-rs/plugins:piper"
+rev = "efa4d79"
+hash = "45a533508a9840cc5a10cf6129f63e6a"
 
 [[flavor.deps]]
 use = "alastairsounds/github-dark-default"
